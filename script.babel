@@ -1,0 +1,146 @@
+// Define height & width values for both the map & map legend
+let h = 700;
+let w = 1000;
+
+// Draw the map, give it a class of "map-area" and make it responsive to screen-size
+const svg = d3.select("body")
+            .append("svg")
+            .attr("class", "map-area")
+            .attr('viewBox', `0 0 ${w} ${h}`) 
+            .attr('preserveAspectRatio', 'xMidYMid meet') 
+            .attr('transform', 'scale(1.05)')
+
+// Create div for our tooltip
+var tooltip = d3.selectAll("body")
+                .append("div")
+                .attr("id","tooltip")
+                .style("opacity", 0);
+
+// Queue JSON data and await callbacks
+d3.queue()
+  .defer(d3.json, "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/counties.json")
+  .defer(d3.json, "https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/for_user_education.json")
+  .await(ready)
+
+// Function that passes county & education data. If error encountered, it is returned to the queue.
+function ready(error, us, edu) {
+  if(error) throw error;
+
+  // Get min & max bachelors values  
+  let minBachelors = d3.min(edu, (d) => d.bachelorsOrHigher);
+  let maxBachelors = d3.max(edu, (d) => d.bachelorsOrHigher);
+  
+  // Quantize scale documentation:https://github.com/d3/d3-scale#quantize-scales. 
+  color = d3.scaleQuantize()
+      .domain([0, 70])
+      .range(d3.schemeBlues[8])
+  
+  // Instantiate path
+  var path = d3.geoPath();
+   
+// countyData variable accesses the county property within the object of the argument labled "us". This variable is fed to our "g" element below to generate the map
+var countyData = topojson.feature(us, us.objects.counties).features
+
+/* NOTE: The appened "g" element and "path" below are based on Mike Bostock's Choropleth map here: https://observablehq.com/@d3/choropleth
+*/
+
+// Append a 'g' element which creates the U.S. map and outlines the counties
+  svg.append("g")
+      .attr("class", "counties")
+      .selectAll("path")
+      .data(countyData)
+      .enter()
+        .append("path")
+        .attr("class","county")
+        .attr("data-fips", (d) => d.id)
+        .attr("data-education", (d) => edu.filter(obj => obj.fips == d.id)
+                                        .map(obj => obj.bachelorsOrHigher))
+        .attr("fill", (d) => color(edu.filter(obj => obj.fips == d.id)
+                                        .map(obj => obj.bachelorsOrHigher)))
+        .attr("d", path)
+         // Display tooltip for plotted data
+        .on("mouseover", mouseOverFn)				
+        .on("mouseout", mouseOutFn);
+  
+// Append a path which outlines the borders of the U.S. states. Set stroke to white to make the borders visible and set fill to "none" so that the output for the state path does not cover the counties. Set stroke-linejoin
+  svg.append("path")
+      .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+      .attr("fill", "none")
+      .attr("stroke", "white")
+      .attr("d", path);
+
+/* Create Legend */
+
+/* NOTE: The code below is based on Mike Bostock's key from a Threshold Scale here: https://bl.ocks.org/mbostock/4573883 */
+  
+// Format the values on the legend
+var formatPercent = d3.format(".0%");
+
+// Set domain and range of legend
+var threshold = d3.scaleThreshold()
+    // D3 Range documentation: https://github.com/d3/d3-array/blob/master/README.md#range
+    .domain(d3.range(minBachelors, maxBachelors, (maxBachelors-minBachelors)/7))
+    .range(color.range());
+    
+// Set the width of the legend
+const legendWidth = 210;
+
+// Set scale for legend
+var x = d3.scaleLinear()
+    .domain(color.domain())
+    .range([0, legendWidth]);
+
+// Format legend axis
+var xAxis = d3.axisBottom(x)
+    .tickSize(18)
+    .tickValues([0,10,20,30,40,50,60,70])
+    .tickFormat( (t) => { return formatPercent(t*.01) });
+
+// Create g element for legend
+var g = d3.select("g")
+          .append("g")
+          .attr("id", "legend")
+          .call(xAxis)
+          .attr("transform", "translate(625," + 60 + ")")
+
+// Remove "endcaps" of the x-axis on the legend
+g.select(".domain")
+    .remove();
+
+// Draw legend
+g.selectAll("rect")
+  .data(threshold.range()
+        .map(function(color) {
+            var d = threshold.invertExtent(color);
+              if (d[0] == null) d[0] = x.domain()[0];
+              if (d[1] == null) d[1] = x.domain()[1];
+              return d;
+            }))
+  .enter()
+    .insert("rect")
+      .attr("stroke", "black")
+      .attr("height", 10)
+      .attr("x", (d,i) => i*30)
+      .attr("width", (w/28))
+      .attr("fill", (d) => { return threshold(d[0]); })
+  
+  /* Functions */
+  
+  // Create functions for our mouseover & mouseout events  
+  function mouseOverFn(d) {
+    let mouseOverData = edu.filter(obj => obj.fips == d.id);  
+
+    tooltip.style("opacity", .9)
+      .style("left", (d3.event.pageX+30) + "px")
+      .style("top", (d3.event.pageY-15) + "px")
+      .text(
+      mouseOverData[0].area_name + ", " + 
+      mouseOverData[0].state + ": " + 
+      mouseOverData[0].bachelorsOrHigher + "%")
+      .attr("data-education", mouseOverData[0].bachelorsOrHigher)
+  }
+
+  function mouseOutFn() {
+    tooltip.style("opacity", 0);	
+  }
+}
