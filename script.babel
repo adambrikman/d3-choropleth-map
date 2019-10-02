@@ -8,7 +8,7 @@ const svg = d3.select("body")
             .attr("class", "map-area")
             .attr('viewBox', `0 0 ${w} ${h}`) 
             .attr('preserveAspectRatio', 'xMidYMid meet') 
-            .attr('transform', 'scale(1.05)')
+            .attr('transform', 'scale(1.00)')
 
 // Create div for our tooltip
 var tooltip = d3.selectAll("body")

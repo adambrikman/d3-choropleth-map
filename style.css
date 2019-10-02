@@ -22,7 +22,8 @@ body {
 }
 
 .map-area {
-  width: 85%;
+  width: 70%;
+  margin-top: -5rem;
 }
 
 .county:hover { 
