@@ -3,7 +3,7 @@
 <!-- /TITLE -->
 
 <!-- DESCRIPTION/ -->
-This Choropleth Map created with the D3 Library and was completed as part of the Free-Code-Camp curriculum.
+This Choropleth Map was created with the D3 Library. This project was completed as part of the Free-Code-Camp curriculum.
 <!-- /DESCRIPTION -->
 
 
