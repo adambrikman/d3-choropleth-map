@@ -20,6 +20,6 @@ This Choropleth Map was created with the D3 Library. This project was completed 
 <!-- Usage/ -->
 <h2>Usage</h2>
 On desktop, hover over a county and a tooltip will display the county name, the State and the percentage of adults aged 25 and older with a bachelor's degree or higher.
-
+<br />
 On mobile, tap a county and the data listed above will be displayed in the tooltip.
 <!-- /Usage -->
